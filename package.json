@@ -1,0 +1,15 @@
+{
+  "name": "skymaps",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:bcherny/skymaps.git",
+  "author": "Boris Cherny <boris@performancejs.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "http-server . -g"
+  },
+  "dependencies": {
+    "http-server": "^14.0.0",
+    "mapbox-gl": "^2.6.1"
+  }
+}
