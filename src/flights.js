@@ -53,10 +53,6 @@ const FLIGHTS_RAW = `
 2021-11-09	ICN	KIX	AZ112
 `
 
-// const UNIQUE_AIRPORT_CODES = [
-//   ...new Set([...FLIGHTS.map((_) => _[1]), ...FLIGHTS.map((_) => _[2])]),
-// ]
-
 const AIRPORTS = {
   KIX: [34.4359, 135.2435],
   PEK: [40.08, 116.584],

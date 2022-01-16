@@ -5,7 +5,6 @@ import FLIGHTS from './flights.js'
 
 mapboxgl.accessToken = CONFIG.MAPBOX_API_KEY
 
-const STEPS = 100
 const JAPAN = [139.8, 35.6]
 
 function initMap() {
@@ -20,29 +19,41 @@ function initMap() {
 function main() {
   const map = initMap()
   map.on('load', () => {
-    const point = initPoint(map, FLIGHTS[0].from.latlng)
-    animateFlights(map, point, 0)
+    const airplane = initAirplane(map, FLIGHTS[0].from.latlng)
+    animateFlights(map, airplane, 0)
   })
 }
 
-function animateFlights(map, point, i) {
-  if (!FLIGHTS[i]) {
+function animateFlights(map, airplane, i) {
+  const flight = FLIGHTS[i]
+  if (!flight) {
     return
   }
-  animateFlight(
-    map,
-    i,
-    FLIGHTS[i].from.latlng,
-    FLIGHTS[i].to.latlng,
-    point,
-    () => {
-      animateFlights(map, point, i + 1)
-    }
-  )
+  updateLabel(flight)
+  animateFlight(map, i, flight.from.latlng, flight.to.latlng, airplane, () => {
+    animateFlights(map, airplane, i + 1)
+  })
 }
 
-function initPoint(map, origin) {
-  const point = {
+function updateLabel(flight) {
+  document.querySelector('#label').innerHTML = `
+  <section>
+    <span class="label">Date</span>
+    <span class="value">${flight.date.toLocaleDateString()}</span>
+  </section>
+  <section>
+    <span class="label">Flight</span>
+    <span class="value">${flight.flight}</span>
+  </section>
+  <section>
+    <span class="label">Route</span>
+    <span class="value">${flight.from.code} ➝ ${flight.to.code}</span>
+  </section>
+    `
+}
+
+function initAirplane(map, origin) {
+  const airplane = {
     type: 'FeatureCollection',
     features: [
       {
@@ -56,14 +67,14 @@ function initPoint(map, origin) {
     ],
   }
 
-  map.addSource('point', {
+  map.addSource('airplane', {
     type: 'geojson',
-    data: point,
+    data: airplane,
   })
 
   map.addLayer({
-    id: 'point',
-    source: 'point',
+    id: 'airplane',
+    source: 'airplane',
     type: 'symbol',
     layout: {
       'icon-image': 'airport-15',
@@ -74,10 +85,10 @@ function initPoint(map, origin) {
     },
   })
 
-  return point
+  return airplane
 }
 
-function animateFlight(map, id, origin, destination, point, onDone) {
+function animateFlight(map, id, origin, destination, airplane, onDone) {
   const route = {
     type: 'FeatureCollection',
     features: [
@@ -100,8 +111,9 @@ function animateFlight(map, id, origin, destination, point, onDone) {
   }
 
   const lineDistance = turf.length(line)
+  const steps = Math.floor(lineDistance / 30)
   const arc = []
-  for (let i = 0; i < lineDistance; i += lineDistance / STEPS) {
+  for (let i = 1; i < lineDistance; i += lineDistance / steps) {
     const segment = turf.along(line, i)
     arc.push(segment.geometry.coordinates)
   }
@@ -122,35 +134,37 @@ function animateFlight(map, id, origin, destination, point, onDone) {
   })
 
   // Start the animation
-  animate(map, id, point, arc, route, 0, onDone)
+  animate(map, id, airplane, arc, route, steps, 0, onDone)
 }
 
-function animate(map, id, point, arc, route, counter, onDone) {
-  const start = arc[counter >= STEPS ? counter - 1 : counter]
-  const end = arc[counter >= STEPS ? counter : counter + 1]
-  if (!start || !end) {
+function finishAnimation(map, id, airplane, arc, route, onDone) {
+  route.features[0].geometry.coordinates = arc
+  airplane.features[0].geometry.coordinates = arc[arc.length - 1]
+  map.getSource('airplane').setData(airplane)
+  map.getSource(`route${id}`).setData(route)
+  onDone()
+}
+
+function animate(map, id, airplane, arc, route, steps, counter, onDone) {
+  if (counter > arc.length - 2) {
+    finishAnimation(map, id, airplane, arc, route, onDone)
     return
   }
 
-  point.features[0].geometry.coordinates = arc[counter]
-  point.features[0].properties.bearing = turf.bearing(
-    turf.point(start),
-    turf.point(end)
+  airplane.features[0].geometry.coordinates = arc[counter]
+  airplane.features[0].properties.bearing = turf.bearing(
+    turf.point(arc[counter]),
+    turf.point(arc[counter + 1])
   )
-  route.features[0].geometry.coordinates.push(arc[counter])
+  route.features[0].geometry.coordinates = arc.slice(0, counter)
 
   // Update the source with this new data
-  map.getSource('point').setData(point)
+  map.getSource('airplane').setData(airplane)
   map.getSource(`route${id}`).setData(route)
 
-  // Request the next frame of animation as long as the end has not been reached
-  if (counter < STEPS) {
-    requestAnimationFrame(() =>
-      animate(map, id, point, arc, route, counter + 1, onDone)
-    )
-  } else {
-    onDone()
-  }
+  requestAnimationFrame(() =>
+    animate(map, id, airplane, arc, route, steps, counter + 1, onDone)
+  )
 }
 
 main()
