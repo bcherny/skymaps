@@ -10,7 +10,7 @@ const JAPAN = [139.8, 35.6]
 function initMap() {
   return new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v11',
+    style: 'mapbox://styles/mapbox/light-v10',
     center: JAPAN,
     zoom: 2,
   })
@@ -138,10 +138,45 @@ function animateFlight(map, id, origin, destination, airplane, onDone) {
 }
 
 function finishAnimation(map, id, airplane, arc, route, onDone) {
+  // Animate route to completion
   route.features[0].geometry.coordinates = arc
   airplane.features[0].geometry.coordinates = arc[arc.length - 1]
   map.getSource('airplane').setData(airplane)
   map.getSource(`route${id}`).setData(route)
+
+  // Add city dot
+  const city = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Point',
+          coordinates: arc[arc.length - 1],
+        },
+      },
+    ],
+  }
+  map.addSource(`city${id}`, {
+    type: 'geojson',
+    data: airplane,
+  })
+
+  map.addLayer({
+    id: `city${id}`,
+    source: `city${id}`,
+    type: 'symbol',
+    layout: {
+      'icon-image': 'attraction-15',
+      'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': false,
+      'icon-ignore-placement': true,
+      'symbol-z-order': 'source',
+      'symbol-sort-key': 1,
+    },
+  })
+
   onDone()
 }
 
