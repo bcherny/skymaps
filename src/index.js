@@ -127,6 +127,9 @@ function animateFlight(map, id, origin, destination, airplane, onDone) {
     id: `route${id}`,
     source: `route${id}`,
     type: 'line',
+    layout: {
+      'line-cap': 'round',
+    },
     paint: {
       'line-width': 2,
       'line-color': '#007cbf',
@@ -173,7 +176,7 @@ function finishAnimation(map, id, airplane, arc, route, onDone) {
       'icon-allow-overlap': false,
       'icon-ignore-placement': true,
       'symbol-z-order': 'source',
-      'symbol-sort-key': 1,
+      'symbol-sort-key': 1000,
     },
   })
 
@@ -196,6 +199,15 @@ function animate(map, id, airplane, arc, route, steps, counter, onDone) {
   // Update the source with this new data
   map.getSource('airplane').setData(airplane)
   map.getSource(`route${id}`).setData(route)
+
+  let i = id
+  while (i--) {
+    const layer = map.getLayer(`route${i}`)
+    const blur = layer.paint.get('line-blur').value.value
+    const width = layer.paint.get('line-width').value.value
+    layer.setPaintProperty('line-blur', blur + 1)
+    layer.setPaintProperty('line-width', width + 1)
+  }
 
   requestAnimationFrame(() =>
     animate(map, id, airplane, arc, route, steps, counter + 1, onDone)
