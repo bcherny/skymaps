@@ -1,5 +1,5 @@
 import AIRPORTS from './const/AIRPORTS.js'
-import BORIS_FLIGHTS from './const/BORIS_FLIGHTS.js'
+import KAZ_FLIGHTS from './const/KAZ_FLIGHTS.js'
 
 const AIRPORTS_INVERTED = mapObject(AIRPORTS, ([lat, lng]) => [lng, lat])
 
@@ -19,7 +19,7 @@ function lookupAirportLatLng(airportCode) {
   return latlng
 }
 
-const FLIGHTS = BORIS_FLIGHTS.split('\n')
+const FLIGHTS = KAZ_FLIGHTS.split('\n')
   .map((_) => _.split(/\s+/).map((_) => _.trim()))
   .filter((_) => _.length > 1)
   .map((_) => {
