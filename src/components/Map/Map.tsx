@@ -2,9 +2,8 @@ import mapboxgl, {GeoJSONSource, LineLayer} from 'mapbox-gl'
 import type {Map as MapboxMap} from 'mapbox-gl'
 import CONFIG from '../../config'
 import FLIGHTS, {Flight, LngLat} from '../../flights'
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useRef} from 'react'
 import {along, bearing, lineDistance, point} from 'turf'
-import Legend from '../Legend/Legend'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './Map.css'
 
@@ -12,10 +11,14 @@ mapboxgl.accessToken = CONFIG.MAPBOX_API_KEY
 
 const JAPAN: LngLat = [139.8, 35.6]
 
-export default function Map(): React.ReactElement {
+type Props = {
+  currentFlight: Flight | null
+  setCurrentFlight(f: Flight): void
+}
+
+export default function Map({setCurrentFlight}: Props): React.ReactElement {
   const mapRef = useRef<MapboxMap | null>(null)
   const divRef = useRef<HTMLDivElement | null>(null)
-  const [currentFlight, setCurrentFlight] = useState<Flight | null>(null)
 
   useEffect(() => {
     if (mapRef.current || !divRef.current) return
@@ -27,14 +30,9 @@ export default function Map(): React.ReactElement {
     })
 
     mapRef.current = map
-  }, [])
+  }, [setCurrentFlight])
 
-  return (
-    <>
-      <div className="Map" ref={divRef} />
-      {currentFlight && <Legend flight={currentFlight} />}
-    </>
-  )
+  return <div className="Map" ref={divRef} />
 }
 
 type Route = GeoJSON.FeatureCollection<GeoJSON.LineString>
@@ -264,10 +262,16 @@ function animate(
   while (i--) {
     const layerName = `route${i}`
     const layer = getLineLayer(map, layerName)
-    const blur = layer.paint?.['line-blur'] as number //!.get('line-blur').value.value
-    const width = layer.paint?.['line-width'] as number //.get('line-width').value.value
-    // map.setPaintProperty(layerName, 'line-blur', blur + 1)
-    // map.setPaintProperty(layerName, 'line-width', width + 1)
+    const blur = (layer.paint as any).get('line-blur').value.value
+    const opacity = (layer.paint as any).get('line-opacity').value.value
+    const width = (layer.paint as any).get('line-width').value.value
+    map.setPaintProperty(layerName, 'line-blur', Math.min(blur + 1, 20))
+    map.setPaintProperty(
+      layerName,
+      'line-opacity',
+      Math.max(opacity * 0.99, 0.05)
+    )
+    map.setPaintProperty(layerName, 'line-width', Math.min(width + 1, 10))
   }
 
   requestAnimationFrame(() =>
