@@ -1,4 +1,4 @@
-export default `
+const BORIS_FLIGHTS = `
 2006-08-10  SFO EWR C1049
 2006-08-11  EWR CDG C56
 2006-08-22  CDG EWR C57
@@ -124,3 +124,5 @@ export default `
 2021-08-24  ODS IST TK466
 2021-08-24  IST SFO TK79
 `
+
+export default BORIS_FLIGHTS

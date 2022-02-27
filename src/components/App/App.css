@@ -1,0 +1,16 @@
+* {
+  border: none;
+  margin: 0;
+  outline: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font: 24px/48px -apple-system, BlinkMacSystemFont, sans-serif;
+}

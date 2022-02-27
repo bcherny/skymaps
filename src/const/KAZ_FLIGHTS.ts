@@ -1,4 +1,4 @@
-export default `
+const KAZ_FLIGHTS = `
 2010-03-15	KIX	PEK	CA928
 2010-03-15	PEK	BKK	CA979
 2010-03-31	BKK	PEK	CA980
@@ -52,3 +52,5 @@ export default `
 2021-11-07	SFO	ICN	AZ211
 2021-11-09	ICN	KIX	AZ112
 `
+
+export default KAZ_FLIGHTS

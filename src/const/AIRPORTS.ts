@@ -1,4 +1,4 @@
-export default {
+const AIRPORTS = {
   KIX: [34.4359, 135.2435],
   PEK: [40.08, 116.584],
   BKK: [13.912, 100.607],
@@ -68,4 +68,6 @@ export default {
   BCN: [41.297445, 2.0832941],
   WAW: [52.159499362, 20.966996132],
   ODS: [46.422831642, 30.673497306],
-}
+} as {[airport: string]: [number, number]}
+
+export default AIRPORTS

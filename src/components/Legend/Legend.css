@@ -1,0 +1,33 @@
+.Legend {
+  background: #000;
+  color: #fff;
+  display: flex;
+  height: 68px;
+  justify-content: center;
+  opacity: 0.7;
+  padding: 20px 20px 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+}
+
+.Legend section {
+  display: block;
+  padding-right: 40px;
+  width: 140px;
+}
+
+.Legend section span {
+  display: block;
+}
+
+.Legend section .label {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.Legend section .value {
+  font-weight: 600;
+}
