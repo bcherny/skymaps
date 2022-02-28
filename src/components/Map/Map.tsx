@@ -1,85 +1,73 @@
-import mapboxgl, {GeoJSONSource, LineLayer} from 'mapbox-gl'
+import mapboxgl, {GeoJSONSource, LineLayer, Marker} from 'mapbox-gl'
 import type {Map as MapboxMap} from 'mapbox-gl'
 import CONFIG from '../../config'
-import FLIGHTS, {Flight, LngLat} from '../../flights'
-import {useEffect, useRef} from 'react'
-import {along, bearing, lineDistance, point} from 'turf'
+import FLIGHTS, {Airport, AirportCode, Flight, LngLat} from '../../flights'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {bearing, point} from 'turf'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './Map.css'
+import {Feature} from '../../utils/computeFeatures'
 
 mapboxgl.accessToken = CONFIG.MAPBOX_API_KEY
 
 const JAPAN: LngLat = [139.8, 35.6]
 
 type Props = {
-  currentFlight: Flight | null
-  setCurrentFlight(f: Flight): void
+  currentFeature: Feature
+  onFlightDone(): void
 }
 
-export default function Map({setCurrentFlight}: Props): React.ReactElement {
-  const mapRef = useRef<MapboxMap | null>(null)
-  const divRef = useRef<HTMLDivElement | null>(null)
+export default function Map({
+  currentFeature,
+  onFlightDone,
+}: Props): React.ReactElement {
+  const [divRef, map] = useMapboxMap()
+  const [visitedAirports, setVisitedAirports] = useState<Set<Airport>>(
+    new Set()
+  )
+
+  const addCityMarkerNx = useCallback(
+    (airport: Airport) => {
+      if (!map) {
+        return
+      }
+      setVisitedAirports((visitedAirports) => {
+        if (visitedAirports.has(airport)) {
+          return visitedAirports
+        }
+        return new Set([...visitedAirports.add(airport)])
+      })
+    },
+    [map]
+  )
 
   useEffect(() => {
-    if (mapRef.current || !divRef.current) return
-    const map = initMap(divRef.current)
-    map.on('load', () => {
-      const airplane = initAirplane(map, FLIGHTS[0].from.lnglat)
-      const features = computeFeatures(FLIGHTS)
-      animateFlights(map, airplane, features, 0, setCurrentFlight)
-    })
+    addCityMarkerNx(currentFeature.flight.from)
+  }, [addCityMarkerNx, currentFeature.flight, map, visitedAirports])
 
-    mapRef.current = map
-  }, [setCurrentFlight])
+  const onDone = useCallback(() => {
+    addCityMarkerNx(currentFeature.flight.to)
+    onFlightDone()
+  }, [addCityMarkerNx, currentFeature.flight.to, onFlightDone])
+
+  const airplane = useAirplane(map, FLIGHTS[0].from.lnglat)
+  useAirportMarkers(map, visitedAirports)
+  useAnimateFlights(map, currentFeature, airplane, onDone)
 
   return <div className="Map" ref={divRef} />
 }
 
-type Route = GeoJSON.FeatureCollection<GeoJSON.LineString>
-type Line = GeoJSON.Feature<GeoJSON.LineString>
+function useMapboxMap() {
+  const [map, setMap] = useState<MapboxMap | null>(null)
+  const divRef = useRef<HTMLDivElement | null>(null)
 
-type Feature = {
-  flight: Flight
-  route: Route
-  line: Line
-  steps: number
-  arc: LngLat[]
-  id: number
-}
+  useEffect(() => {
+    if (map || !divRef.current) return
+    const m = initMap(divRef.current)
+    m.on('load', () => setMap(m))
+  }, [map])
 
-function computeFeatures(flights: Flight[]): Feature[] {
-  return flights.map((flight, index) => {
-    const {from, to} = flight
-    const route: Route = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: [from.lnglat, from.lnglat],
-          },
-          properties: {},
-        },
-      ],
-    }
-    const line: Line = {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [from.lnglat, to.lnglat],
-      },
-      properties: {},
-    }
-    const distance = lineDistance(line)
-    const steps = Math.floor(distance / 30)
-    const arc: LngLat[] = []
-    for (let i = 1; i < distance; i += distance / steps) {
-      const segment = along(line, i)
-      arc.push(segment.geometry.coordinates as LngLat)
-    }
-    return {flight, route, line, steps, arc, id: index}
-  })
+  return useMemo(() => [divRef, map] as const, [map])
 }
 
 function initMap(container: HTMLElement): MapboxMap {
@@ -87,68 +75,122 @@ function initMap(container: HTMLElement): MapboxMap {
     container,
     style: 'mapbox://styles/mapbox/light-v10',
     center: JAPAN,
-    zoom: 2,
+    zoom: 1.5,
   })
 }
 
+export type Route = GeoJSON.FeatureCollection<GeoJSON.LineString>
 type Airplane = GeoJSON.FeatureCollection<GeoJSON.Point>
 
-function initAirplane(map: MapboxMap, origin: LngLat): Airplane {
-  const airplane: Airplane = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Point',
-          coordinates: origin,
+function useAirplane(map: MapboxMap | null, origin: LngLat): Airplane {
+  const airplane: Airplane = useMemo(
+    () => ({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Point',
+            coordinates: origin,
+          },
         },
+      ],
+    }),
+    [origin]
+  )
+
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+
+    map.addSource('airplane', {
+      type: 'geojson',
+      data: airplane,
+    })
+
+    map.addLayer({
+      id: 'airplane',
+      source: 'airplane',
+      type: 'symbol',
+      layout: {
+        'icon-image': 'airport-15',
+        'icon-rotate': ['get', 'bearing'],
+        'icon-rotation-alignment': 'map',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
       },
-    ],
-  }
-
-  map.addSource('airplane', {
-    type: 'geojson',
-    data: airplane,
-  })
-
-  map.addLayer({
-    id: 'airplane',
-    source: 'airplane',
-    type: 'symbol',
-    layout: {
-      'icon-image': 'airport-15',
-      'icon-rotate': ['get', 'bearing'],
-      'icon-rotation-alignment': 'map',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-    },
-  })
+      paint: {
+        'icon-color': '#007cbf',
+      },
+    })
+  }, [airplane, map, origin])
 
   return airplane
 }
 
-function animateFlights(
-  map: MapboxMap,
-  airplane: Airplane,
-  features: Feature[],
-  i: number,
-  setCurrentFlight: (f: Flight) => void
-): void {
-  const feature = features[i]
-  if (!feature) {
-    return
-  }
-  setCurrentFlight(feature.flight)
-  animateFlight(map, feature, airplane, () => {
-    animateFlights(map, airplane, features, i + 1, setCurrentFlight)
+type Labels = GeoJSON.FeatureCollection<GeoJSON.Geometry>
+
+function useLabels(map: MapboxMap | null): [Labels, (l: Labels) => void] {
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+
+    map.addSource(`cityLabels`, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [],
+      },
+    })
+
+    map.addLayer(
+      {
+        id: `cityLabels`,
+        type: 'symbol',
+        source: `cityLabels`,
+        layout: {
+          'text-size': 16,
+          'text-field': ['get', 'description'],
+          'text-variable-anchor': ['bottom'],
+          'text-radial-offset': 0.5,
+          'text-ignore-placement': true,
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-halo-color': '#fff',
+          'text-halo-width': 2,
+        },
+      },
+      'airplane'
+    )
+  }, [map])
+
+  return useState<Labels>({
+    type: 'FeatureCollection',
+    features: [],
   })
+}
+
+function useAnimateFlights(
+  map: MapboxMap | null,
+  currentFeature: Feature,
+  airplane: Airplane,
+  onFlightDone: () => void
+): void {
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+    animateFlight(map!, currentFeature, airplane, onFlightDone)
+  }, [airplane, currentFeature, map, onFlightDone])
 }
 
 function animateFlight(
   map: MapboxMap,
-  {id, route, arc, steps}: Feature,
+  {flight, id, route, arc, steps}: Feature,
   airplane: Airplane,
   onDone: () => void
 ): void {
@@ -157,21 +199,24 @@ function animateFlight(
     data: route,
   })
 
-  map.addLayer({
-    id: `route${id}`,
-    source: `route${id}`,
-    type: 'line',
-    layout: {
-      'line-cap': 'round',
+  map.addLayer(
+    {
+      id: `route${id}`,
+      source: `route${id}`,
+      type: 'line',
+      layout: {
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-width': 2,
+        'line-color': '#007cbf',
+      },
     },
-    paint: {
-      'line-width': 2,
-      'line-color': '#007cbf',
-    },
-  })
+    'cityLabels'
+  )
 
   // Start the animation
-  animate(map, id, airplane, arc, route, steps, 0, onDone)
+  animate(map, id, airplane, flight, arc, route, steps, 0, onDone)
 }
 
 function finishAnimation(
@@ -188,40 +233,55 @@ function finishAnimation(
   getGeoJSONSource(map, 'airplane').setData(airplane)
   getGeoJSONSource(map, `route${id}`).setData(route)
 
-  // Add city dot
-  const city: GeoJSON.FeatureCollection<GeoJSON.Point> = {
-    type: 'FeatureCollection',
-    features: [
-      {
+  onDone()
+}
+
+function useAirportMarkers(
+  map: MapboxMap | null,
+  visitedAirports: Set<Airport>
+): void {
+  const [labels, setLabels] = useLabels(map)
+  const renderedMarkers = useRef<Set<AirportCode>>(new Set())
+
+  // Sync labels to map
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+    getGeoJSONSource(map, 'cityLabels').setData(labels)
+  }, [labels, map])
+
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+
+    for (const {code, lnglat} of visitedAirports) {
+      if (renderedMarkers.current.has(code)) {
+        continue
+      }
+
+      const el = document.createElement('div')
+      el.classList.add('Marker', 'Blue')
+      new Marker(el).setLngLat(lnglat).addTo(map)
+      renderedMarkers.current.add(code)
+
+      const label: GeoJSON.Feature<GeoJSON.Geometry> = {
         type: 'Feature',
-        properties: {},
+        properties: {
+          description: code,
+        },
         geometry: {
           type: 'Point',
-          coordinates: arc[arc.length - 1],
+          coordinates: lnglat,
         },
-      },
-    ],
-  }
-  map.addSource(`city${id}`, {
-    type: 'geojson',
-    data: airplane,
-  })
-
-  map.addLayer({
-    id: `city${id}`,
-    source: `city${id}`,
-    type: 'symbol',
-    layout: {
-      'icon-image': 'attraction-15',
-      'icon-rotation-alignment': 'map',
-      'icon-allow-overlap': false,
-      'icon-ignore-placement': true,
-      'symbol-z-order': 'source',
-      'symbol-sort-key': 1000,
-    },
-  })
-
-  onDone()
+      }
+      setLabels({
+        type: 'FeatureCollection',
+        features: [...labels.features, label],
+      })
+    }
+  }, [labels.features, map, setLabels, visitedAirports])
 }
 
 function getGeoJSONSource(map: MapboxMap, key: string): GeoJSONSource {
@@ -236,6 +296,7 @@ function animate(
   map: MapboxMap,
   id: number,
   airplane: Airplane,
+  flight: Flight,
   arc: LngLat[],
   route: Route,
   steps: number,
@@ -269,12 +330,12 @@ function animate(
     map.setPaintProperty(
       layerName,
       'line-opacity',
-      Math.max(opacity * 0.99, 0.05)
+      Math.max(opacity * 0.99, 0.2)
     )
     map.setPaintProperty(layerName, 'line-width', Math.min(width + 1, 10))
   }
 
   requestAnimationFrame(() =>
-    animate(map, id, airplane, arc, route, steps, counter + 1, onDone)
+    animate(map, id, airplane, flight, arc, route, steps, counter + 1, onDone)
   )
 }

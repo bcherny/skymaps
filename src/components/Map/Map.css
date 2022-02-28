@@ -7,3 +7,15 @@
   top: 0;
   width: 100%;
 }
+
+.Marker {
+  border-radius: 50%;
+  box-shadow: 2px 2px 2px rgb(0 0 0 / 5%);
+  display: block;
+  height: 8px;
+  width: 8px;
+}
+
+.Marker.Blue {
+  background-color: #007cbf;
+}

@@ -26,15 +26,17 @@ function lookupAirportLngLat(airportCode: string): LngLat {
   return lngLat
 }
 
-export type AirportCode = keyof typeof AIRPORTS_INVERTED
+export type AirportCode = string
 export type LngLat = [number, number]
 
 export type Flight = {
   date: Date
   flight: string
-  from: {code: AirportCode; lnglat: LngLat}
-  to: {code: AirportCode; lnglat: LngLat}
+  from: Airport
+  to: Airport
 }
+
+export type Airport = {code: AirportCode; lnglat: LngLat}
 
 const FLIGHTS: Flight[] = KAZ_FLIGHTS.split('\n')
   .map((_) => _.split(/\s+/).map((_) => _.trim()))
