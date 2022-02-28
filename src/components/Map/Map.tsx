@@ -2,7 +2,15 @@ import mapboxgl, {GeoJSONSource, LineLayer, Marker} from 'mapbox-gl'
 import type {Map as MapboxMap} from 'mapbox-gl'
 import CONFIG from '../../config'
 import FLIGHTS, {Airport, AirportCode, Flight, LngLat} from '../../flights'
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {bearing, point} from 'turf'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './Map.css'
@@ -132,7 +140,9 @@ function useAirplane(map: MapboxMap | null, origin: LngLat): Airplane {
 
 type Labels = GeoJSON.FeatureCollection<GeoJSON.Geometry>
 
-function useLabels(map: MapboxMap | null): [Labels, (l: Labels) => void] {
+function useAirportLabels(
+  map: MapboxMap | null
+): [Labels, Dispatch<SetStateAction<Labels>>] {
   useEffect(() => {
     if (!map) {
       return
@@ -154,10 +164,8 @@ function useLabels(map: MapboxMap | null): [Labels, (l: Labels) => void] {
         layout: {
           'text-size': 16,
           'text-field': ['get', 'description'],
-          'text-variable-anchor': ['bottom'],
+          'text-variable-anchor': ['bottom', 'top', 'left', 'right'],
           'text-radial-offset': 0.5,
-          'text-ignore-placement': true,
-          'text-allow-overlap': false,
         },
         paint: {
           'text-halo-color': '#fff',
@@ -240,7 +248,7 @@ function useAirportMarkers(
   map: MapboxMap | null,
   visitedAirports: Set<Airport>
 ): void {
-  const [labels, setLabels] = useLabels(map)
+  const [labels, setLabels] = useAirportLabels(map)
   const renderedMarkers = useRef<Set<AirportCode>>(new Set())
 
   // Sync labels to map
@@ -276,10 +284,10 @@ function useAirportMarkers(
           coordinates: lnglat,
         },
       }
-      setLabels({
+      setLabels((labels) => ({
         type: 'FeatureCollection',
         features: [...labels.features, label],
-      })
+      }))
     }
   }, [labels.features, map, setLabels, visitedAirports])
 }
