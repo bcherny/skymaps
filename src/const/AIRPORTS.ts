@@ -1,4 +1,4 @@
-const AIRPORTS = {
+const AIRPORTS: {[airport: string]: [number, number]} = {
   KIX: [34.4359, 135.2435],
   PEK: [40.08, 116.584],
   BKK: [13.912, 100.607],
@@ -21,7 +21,7 @@ const AIRPORTS = {
   VCE: [45.505, 12.352],
   CDG: [49.013, 2.55],
   AMS: [52.309, 4.764],
-  ANK: [39.95, 32.689],
+  ESB: [39.95, 32.689],
   BEY: [33.813, 35.489],
   HKG: [22.309, 113.914],
   NGO: [35.255, 136.924],
@@ -68,6 +68,6 @@ const AIRPORTS = {
   BCN: [41.297445, 2.0832941],
   WAW: [52.159499362, 20.966996132],
   ODS: [46.422831642, 30.673497306],
-} as {[airport: string]: [number, number]}
+}
 
 export default AIRPORTS

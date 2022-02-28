@@ -15,6 +15,7 @@ import {bearing, point} from 'turf'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './Map.css'
 import {Feature} from '../../utils/computeFeatures'
+import AIRPORTS_TO_COUNTRIES from '../../const/AIRPORTS_TO_COUNTRIES'
 
 mapboxgl.accessToken = CONFIG.MAPBOX_API_KEY
 
@@ -62,7 +63,51 @@ export default function Map({
   useAirportMarkers(map, visitedAirports)
   useAnimateFlights(map, currentFeature, airplane, onDone)
 
+  useCountries(map, visitedAirports)
+
   return <div className="Map" ref={divRef} />
+}
+
+function useCountries(
+  map: MapboxMap | null,
+  visitedAirports: Set<Airport>
+): void {
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+    map.addLayer(
+      {
+        id: 'country-boundaries',
+        source: {
+          type: 'vector',
+          url: 'mapbox://mapbox.country-boundaries-v1',
+        },
+        'source-layer': 'country_boundaries',
+        type: 'fill',
+        paint: {
+          'fill-color': '#007cbf',
+          'fill-opacity': 0.4,
+        },
+      },
+      'country-label'
+    )
+    map.setFilter('country-boundaries', ['in', 'iso_3166_1_alpha_3'])
+  }, [map])
+
+  useEffect(() => {
+    if (!map) {
+      return
+    }
+    const countries = [...visitedAirports].map(
+      (_) => AIRPORTS_TO_COUNTRIES[_.code]
+    )
+    map.setFilter('country-boundaries', [
+      'in',
+      'iso_3166_1_alpha_3',
+      ...countries,
+    ])
+  })
 }
 
 function useMapboxMap() {
