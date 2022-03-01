@@ -10,6 +10,7 @@
 
 .Marker {
   border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 2px 2px 2px rgb(0 0 0 / 5%);
   display: block;
   height: 8px;
