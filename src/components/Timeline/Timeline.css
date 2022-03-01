@@ -1,0 +1,37 @@
+.Timeline {
+  background: #000;
+  height: 40px;
+  opacity: 0.7;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+}
+
+.Timeline .Plane {
+  position: absolute;
+  margin-left: -5px;
+  transition: all 0.5s ease-in-out;
+  top: -3px;
+}
+
+.Timeline .Plane::after {
+  color: #fff;
+  content: '\2708';
+}
+
+.Timeline .Flight {
+  border-left: 2px solid #000;
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  width: 8px;
+}
+
+.Timeline .Flight.Blue {
+  background-color: #007cbf;
+}
+.Timeline .Flight.Red {
+  background-color: red;
+}

@@ -1,5 +1,5 @@
 import type {Map as MapboxMap} from 'mapbox-gl'
-import FLIGHTS, {Airport, Flight, LngLat} from '../../flights'
+import {Airport, Flight, LngLat} from '../../flights'
 import {useCallback, useEffect, useState} from 'react'
 import {bearing, point} from 'turf'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -49,7 +49,7 @@ export default function Map({
     onFlightDone()
   }, [addCityMarkerNx, currentFeature.flight.to, onFlightDone])
 
-  const airplane = useAirplane(map, FLIGHTS[0].from.lnglat)
+  const airplane = useAirplane(map, currentFeature.arc[0])
   useAirportMarkers(map, visitedAirports)
   useAnimateFlights(map, currentFeature, airplane, onDone)
   useCountryShader(map, visitedAirports)

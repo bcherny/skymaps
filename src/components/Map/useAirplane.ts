@@ -22,7 +22,7 @@ export default function useAirplane(
         },
       ],
     }),
-    [origin]
+    []
   )
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function useAirplane(
         'icon-color': '#007cbf',
       },
     })
-  }, [airplane, map, origin])
+  }, [airplane, map])
 
   return airplane
 }

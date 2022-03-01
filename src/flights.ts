@@ -1,4 +1,5 @@
 import AIRPORTS from './const/AIRPORTS'
+import BORIS_FLIGHTS from './const/BORIS_FLIGHTS'
 import KAZ_FLIGHTS from './const/KAZ_FLIGHTS'
 
 const AIRPORTS_INVERTED = mapObject(
@@ -38,19 +39,23 @@ export type Flight = {
 
 export type Airport = {code: AirportCode; lnglat: LngLat}
 
-const FLIGHTS: Flight[] = KAZ_FLIGHTS.split('\n')
-  .map((_) => _.split(/\s+/).map((_) => _.trim()))
-  .filter((_) => _.length > 1)
-  .map((_) => {
-    const fromLngLat = lookupAirportLngLat(_[1])
-    const toLngLat = lookupAirportLngLat(_[2])
-    return {
-      date: new Date(_[0]),
-      from: {code: _[1] as AirportCode, lnglat: fromLngLat},
-      to: {code: _[2] as AirportCode, lnglat: toLngLat},
-      flight: _[3],
-    }
-  })
-  .sort((a, b) => (a.date < b.date ? -1 : 1))
+export const BLUE_FLIGHTS = parseFlights(KAZ_FLIGHTS)
+export const RED_FLIGHTS = parseFlights(BORIS_FLIGHTS)
 
-export default FLIGHTS
+function parseFlights(flights: string): Flight[] {
+  return flights
+    .split('\n')
+    .map((_) => _.split(/\s+/).map((_) => _.trim()))
+    .filter((_) => _.length > 1)
+    .map((_) => {
+      const fromLngLat = lookupAirportLngLat(_[1])
+      const toLngLat = lookupAirportLngLat(_[2])
+      return {
+        date: new Date(_[0]),
+        from: {code: _[1] as AirportCode, lnglat: fromLngLat},
+        to: {code: _[2] as AirportCode, lnglat: toLngLat},
+        flight: _[3],
+      }
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+}
