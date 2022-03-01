@@ -92,6 +92,7 @@ function useCountries(
       },
       'country-label'
     )
+    // bcherny.d64kq0ad ISO_A3
     map.setFilter('country-boundaries', ['in', 'iso_3166_1_alpha_3'])
   }, [map])
 
@@ -99,8 +100,8 @@ function useCountries(
     if (!map) {
       return
     }
-    const countries = [...visitedAirports].map(
-      (_) => AIRPORTS_TO_COUNTRIES[_.code]
+    const countries = new Set(
+      [...visitedAirports].map((_) => AIRPORTS_TO_COUNTRIES[_.code])
     )
     map.setFilter('country-boundaries', [
       'in',
