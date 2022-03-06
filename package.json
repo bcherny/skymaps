@@ -5,17 +5,19 @@
   "dependencies": {
     "mapbox-gl": "^2.7.0",
     "react": "^17.0.2",
+    "react-dnd": "^15.1.1",
+    "react-dnd-html5-backend": "^15.1.2",
     "react-dom": "^17.0.2",
     "react-scripts": "5.0.0",
     "turf": "^3.0.14",
     "typescript": "^4.4.2"
   },
   "devDependencies": {
-    "@types/mapbox-gl": "^2.6.1",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^12.0.0",
     "@testing-library/user-event": "^13.2.1",
     "@types/jest": "^27.0.1",
+    "@types/mapbox-gl": "^2.6.1",
     "@types/node": "^16.7.13",
     "@types/react": "^17.0.20",
     "@types/react-dom": "^17.0.9",

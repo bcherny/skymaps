@@ -1,22 +1,23 @@
 import React, {useCallback, useMemo, useState} from 'react'
-import {BLUE_FLIGHTS} from '../../flights'
+import {BLUE_FLIGHTS, RED_FLIGHTS} from '../../flights'
 import computeFeatures, {Feature} from '../../utils/computeFeatures'
 import Legend from '../Legend/Legend'
 import Map from '../Map/Map'
-import {Timeline} from '../Timeline/Timeline'
+import Timeline from '../Timeline/Timeline'
 import './App.css'
 
 function App(): React.ReactElement {
-  const features = useMemo(() => computeFeatures(BLUE_FLIGHTS), [])
-  const [currentFeature, setCurrentFeature] = useState<Feature>(features[0])
+  const blueFeatures = useMemo(() => computeFeatures(BLUE_FLIGHTS), [])
+  const redFeatures = useMemo(() => computeFeatures(RED_FLIGHTS), [])
+  const [currentFeature, setCurrentFeature] = useState<Feature>(blueFeatures[0])
 
   const onFlightDone = useCallback(() => {
-    const i = features.indexOf(currentFeature)
-    const nextFeature = features[i + 1]
+    const i = blueFeatures.indexOf(currentFeature)
+    const nextFeature = blueFeatures[i + 1]
     if (nextFeature) {
       setCurrentFeature(nextFeature)
     }
-  }, [currentFeature, features])
+  }, [currentFeature, blueFeatures])
 
   return (
     <div className="App">
@@ -24,7 +25,7 @@ function App(): React.ReactElement {
       <Legend flight={currentFeature.flight} />
       <Timeline
         currentFeature={currentFeature}
-        features={features}
+        features={[blueFeatures, redFeatures]}
         color="Blue"
       />
     </div>
